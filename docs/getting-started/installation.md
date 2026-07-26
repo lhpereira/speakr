@@ -257,6 +257,12 @@ LOG_LEVEL="INFO"
 
 Setting `ALLOW_REGISTRATION=false` means only the admin can create new user accounts, which is recommended for private installations where you want to control access. If you're running Speakr for a group or family, this prevents random people from creating accounts. If you enable registration and want to restrict it to specific email domains (e.g., for corporate use), set `REGISTRATION_ALLOWED_DOMAINS` to a comma-separated list of domains like `company.com,subsidiary.org`. Leave it empty to allow all domains. The log level controls how much information Speakr writes to its logs. Use `INFO` during initial setup and testing to see what's happening, then switch to `ERROR` for production to reduce log volume and improve performance.
 
+Optionally, you can change the application name throughout the UI (titles, headers, footers), by setting up the `APP_NAME` parameter. 
+
+```bash
+APP_NAME=Speakr
+```
+
 ### Step 5: Configure Advanced Features
 
 #### Large File Handling
