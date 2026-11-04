@@ -1,7 +1,7 @@
 #!/bin/sh
 # Regenerate requirements.lock (lite image) and requirements-embeddings.lock
 # (full image) from requirements.txt, requirements-embeddings.txt and
-# constraints.txt.
+# constraints.txt, and mcp-server/requirements.lock from mcp-server/pyproject.toml.
 #
 # The lock files pin every package, including the dependencies of
 # dependencies, with the hash of every published file, for amd64 and arm64.
@@ -39,6 +39,8 @@ docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/w -w /w \
     if [ "$CHECK" = "1" ]; then
         OUT=$(mktemp -d)
         cp requirements.lock requirements-embeddings.lock "$OUT"/
+        mkdir "$OUT"/mcp-server
+        cp mcp-server/requirements.lock "$OUT"/mcp-server/
     fi
     $UV pip compile -q requirements.txt -c constraints.txt \
         --universal --python-version 3.11 --generate-hashes \
@@ -46,9 +48,13 @@ docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD":/w -w /w \
     $UV pip compile -q requirements.txt requirements-embeddings.txt -c constraints.txt \
         --universal --python-version 3.11 --generate-hashes \
         -o "$OUT"/requirements-embeddings.lock "$@"
+    $UV pip compile -q mcp-server/pyproject.toml \
+        --universal --python-version 3.11 --generate-hashes \
+        -o "$OUT"/mcp-server/requirements.lock "$@"
     if [ "$CHECK" = "1" ]; then
         diff -u requirements.lock "$OUT"/requirements.lock && \
-        diff -u requirements-embeddings.lock "$OUT"/requirements-embeddings.lock || {
+        diff -u requirements-embeddings.lock "$OUT"/requirements-embeddings.lock && \
+        diff -u mcp-server/requirements.lock "$OUT"/mcp-server/requirements.lock || {
             echo "The lock files do not match the requirements; run scripts/lock-requirements.sh" >&2
             exit 1
         }

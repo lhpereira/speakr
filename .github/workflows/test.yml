@@ -241,6 +241,26 @@ jobs:
         if: always()
         run: tail -n 200 /tmp/speakr.log || true
 
+  mcp-server:
+    # Unit tests of the MCP server, then the real server over stdio against a
+    # real Speakr with stand-ins for ASR and the language model. Both run in
+    # containers, as they do on a developer's machine (mcp-server/README.md).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Unit tests
+        run: |
+          docker build --target test -t speakr-mcp-test mcp-server
+          docker run --rm speakr-mcp-test
+
+      - name: End to end
+        run: docker compose -f mcp-server/tests/e2e/docker-compose.yml run --rm --build tests
+
+      - name: Speakr log
+        if: failure()
+        run: docker compose -f mcp-server/tests/e2e/docker-compose.yml logs --tail 200 speakr
+
   js-tests:
     runs-on: ubuntu-latest
 

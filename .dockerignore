@@ -50,6 +50,7 @@ tests/
 .claude/
 .migrate/
 .github/
+mcp-server/
 
 # IDE and editor files
 .idea/
