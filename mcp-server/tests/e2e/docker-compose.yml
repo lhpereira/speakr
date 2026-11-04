@@ -1,0 +1,85 @@
+# The MCP server against a real Speakr, with stand-ins for ASR and the language
+# model. Nothing is published on the host, so it cannot collide with what else
+# runs on the machine, and its volumes are its own.
+#
+#   docker compose -f mcp-server/tests/e2e/docker-compose.yml run --rm --build tests
+#   docker compose -f mcp-server/tests/e2e/docker-compose.yml down -v
+#
+# Not `up --abort-on-container-exit`: the seed service ending would stop the stack.
+name: speakr-mcp-e2e
+
+x-speakr-environment: &speakr-environment
+  SECRET_KEY: mcp-e2e-test
+  SQLALCHEMY_DATABASE_URI: sqlite:////data/instance/transcriptions.db
+  UPLOAD_FOLDER: /data/uploads
+  TEXT_MODEL_BASE_URL: http://fakes:9000/v1
+  TEXT_MODEL_API_KEY: test
+  TEXT_MODEL_NAME: test-model
+  ASR_BASE_URL: http://fakes:9000
+  ASR_DIARIZE: "true"
+  ASR_RETURN_SPEAKER_EMBEDDINGS: "false"
+  DISABLE_VOICE_EMBEDDING_CHECK: "true"
+  ADMIN_USERNAME: admin
+  ADMIN_EMAIL: admin@example.com
+  ADMIN_PASSWORD: changeme-e2e
+  ENABLE_PUBLIC_SHARING: "true"
+  ALLOW_REGISTRATION: "false"
+  LOG_LEVEL: WARNING
+
+services:
+  fakes:
+    image: python:3.11-slim@sha256:e88e9763f943ec1834f992a4b51e0f24500486803e8bc534e5767af9ea65f6ce
+    command: ["python", "/fake_services.py"]
+    volumes:
+      - ./fake_services.py:/fake_services.py:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:9000/health')"]
+      interval: 2s
+      retries: 15
+
+  speakr:
+    image: speakr-mcp-e2e/speakr:lite
+    build:
+      context: ../../..
+      args:
+        LIGHTWEIGHT: "1"
+    environment: *speakr-environment
+    volumes:
+      - speakr-data:/data
+    depends_on:
+      fakes:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8899/login')"]
+      interval: 3s
+      retries: 40
+
+  seed:
+    image: speakr-mcp-e2e/speakr:lite
+    entrypoint: ["python", "/seed.py"]
+    command: []
+    environment: *speakr-environment
+    volumes:
+      - speakr-data:/data
+      - shared:/shared
+      - ./seed.py:/seed.py:ro
+    depends_on:
+      speakr:
+        condition: service_healthy
+
+  tests:
+    build:
+      context: ../..
+      target: test
+    environment:
+      SPEAKR_MCP_E2E_URL: http://speakr:8899
+      SPEAKR_MCP_E2E_SEED: /shared/seed.json
+    volumes:
+      - shared:/shared:ro
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+
+volumes:
+  speakr-data:
+  shared:

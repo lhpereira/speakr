@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "speakr-mcp"
+version = "0.1.0"
+description = "Model Context Protocol server for Speakr: search, read and manage recordings from an AI assistant"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "AGPL-3.0-only"
+dependencies = [
+    "httpx>=0.28,<1",
+    "mcp>=2.3,<3",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+speakr-mcp = "speakr_mcp.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/speakr_mcp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-p no:cacheprovider"
