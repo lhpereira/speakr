@@ -5,6 +5,8 @@ Speakr provides a comprehensive REST API (v1) for automation tools, dashboard wi
 !!! tip "Interactive Documentation"
     Access the interactive Swagger UI documentation at `/api/v1/docs` on your Speakr instance. You can test endpoints directly from your browser.
 
+To use this API from an AI assistant, see the [MCP Server](mcp-server.md).
+
 ## Base URL
 
 All API v1 endpoints are prefixed with `/api/v1`:
